@@ -95,4 +95,5 @@ def odds():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Set HOST=0.0.0.0 to reach the app from a phone on the same network.
+    app.run(host=os.environ.get("HOST", "127.0.0.1"), debug=True)
