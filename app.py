@@ -23,9 +23,22 @@ PROMPT = (
 )
 
 
+def sniff_media_type(data):
+    """Detect the image type from its bytes (browsers label .jfif etc. inconsistently)."""
+    if data.startswith(b"\xff\xd8"):
+        return "image/jpeg"
+    if data.startswith(b"\x89PNG"):
+        return "image/png"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data[:3] == b"GIF":
+        return "image/gif"
+    raise ValueError("Unsupported image type. Use a JPEG, PNG, WebP or GIF photo.")
+
+
 def read_cards(file_storage, expected):
     data = file_storage.read()
-    media_type = file_storage.mimetype or "image/jpeg"
+    media_type = sniff_media_type(data)
     client = anthropic.Anthropic()
     resp = client.messages.create(
         model=MODEL,
@@ -62,6 +75,9 @@ def recognize():
     expected = 3 if kind == "flop" else 2
     try:
         cards = read_cards(image, expected)
+    except anthropic.APIConnectionError:
+        return jsonify(error="Cannot reach the Anthropic API from the server. Check the "
+                             "network/proxy (set HTTPS_PROXY if needed)."), 502
     except anthropic.AuthenticationError:
         return jsonify(error="Set the ANTHROPIC_API_KEY environment variable."), 500
     except Exception as e:  # surface any recognition failure to the UI
