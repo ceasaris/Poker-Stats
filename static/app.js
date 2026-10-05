@@ -20,8 +20,60 @@ function makeCard(c) {
   return el;
 }
 
+// Pip positions (x, y) on a 100x140 card for ranks 2-10, like a real deck.
+const L = 30, C = 50, R = 70;
+const PIPS = {
+  2: [[C, 32], [C, 108]],
+  3: [[C, 32], [C, 70], [C, 108]],
+  4: [[L, 32], [R, 32], [L, 108], [R, 108]],
+  5: [[L, 32], [R, 32], [C, 70], [L, 108], [R, 108]],
+  6: [[L, 32], [R, 32], [L, 70], [R, 70], [L, 108], [R, 108]],
+  7: [[L, 32], [R, 32], [C, 51], [L, 70], [R, 70], [L, 108], [R, 108]],
+  8: [[L, 32], [R, 32], [C, 51], [L, 70], [R, 70], [C, 89], [L, 108], [R, 108]],
+  9: [[L, 32], [R, 32], [L, 56], [R, 56], [C, 70], [L, 84], [R, 84], [L, 108], [R, 108]],
+  10: [[L, 32], [R, 32], [C, 44], [L, 56], [R, 56], [L, 84], [R, 84], [C, 96], [L, 108], [R, 108]],
+};
+const FACE_NAME = { J: "J", Q: "Q", K: "K" };
+
+function cardSVG(code) {
+  const rank = code[0], suit = SUIT_SYMBOL[code[1]];
+  const color = "dh".includes(code[1]) ? "#c8102e" : "#14181a";
+  const label = rank === "T" ? "10" : rank;
+  const t = (x, y, size, txt, extra = "") =>
+    `<text x="${x}" y="${y}" font-size="${size}" text-anchor="middle" dominant-baseline="central" ${extra}>${txt}</text>`;
+  const rot = (x, y, inner) => `<g transform="rotate(180 ${x} ${y})">${inner}</g>`;
+
+  let body = "";
+  if (rank === "A") {
+    body = t(C, 72, 64, suit);
+  } else if (FACE_NAME[rank]) {
+    body = `<rect x="24" y="26" width="52" height="88" rx="5" fill="${color}" fill-opacity=".07" stroke="${color}" stroke-width="1.5"/>`
+      + t(C, 70, 50, label, 'font-weight="700" font-family="Georgia, serif"')
+      + t(C, 40, 20, suit) + rot(C, 70, t(C, 40, 20, suit));
+  } else {
+    body = PIPS[label === "10" ? 10 : +rank]
+      .map(([x, y]) => (y > 70 ? rot(x, y, t(x, y, 26, suit)) : t(x, y, 26, suit)))
+      .join("");
+  }
+  const corner = t(10, 18, label === "10" ? 14 : 17, label, 'font-weight="700" font-family="Georgia, serif"')
+    + t(10, 34, 15, suit);
+  return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" fill="${color}" role="img" aria-label="${label} of ${suit}">
+    <rect x="1" y="1" width="98" height="138" rx="9" fill="#fff" stroke="#b9b9b0" stroke-width="1.5"/>
+    ${corner}${rot(C, 70, corner)}${body}</svg>`;
+}
+
+// A realistic card face for the flop/hand slots (falls back to a plain tile for bad input).
+function makeFace(code) {
+  if (!VALID_CARD.test(code)) return makeCard(code);
+  const el = document.createElement("span");
+  el.className = "card face";
+  el.dataset.code = code;
+  el.innerHTML = cardSVG(code);
+  return el;
+}
+
 function renderCards(el, cards) {
-  el.replaceChildren(...cards.map(makeCard));
+  el.replaceChildren(...cards.map(makeFace));
   validate();
 }
 
@@ -122,28 +174,11 @@ function pickerHTML() {
 
 function bindInputs({ root, cardsEl, kind, onCards }) {
   const textEl = root.querySelector("input[type=text]");
-  let preview = null;
-  function showPhoto(file) {
-    if (!preview) {
-      const link = document.createElement("a");
-      link.className = "photo";
-      link.target = "_blank";
-      link.title = "Open full size";
-      link.append(document.createElement("img"));
-      cardsEl.before(link);
-      preview = link;
-    }
-    URL.revokeObjectURL(preview.href);
-    preview.href = URL.createObjectURL(file);
-    preview.firstChild.src = preview.href;
-    preview.firstChild.alt = "Photographed cards";
-  }
   for (const fileEl of root.querySelectorAll("input[type=file]")) {
     fileEl.addEventListener("change", async () => {
       const file = fileEl.files[0];
       fileEl.value = "";  // allow picking the same photo again
       if (!file) return;
-      showPhoto(file);
       cardsEl.textContent = "Reading…";
       try {
         const cards = await recognize(file, kind);
