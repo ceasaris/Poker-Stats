@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poker Odds</title>
+<style>
+  :root { --bg:#0f3d2a; --ink:#1b1b1b; --accent:#f2c14e; --muted:#6b7a72; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:#fff; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px; }
+  h1 { margin: 8px 0 16px; }
+  .panel { background:#fff; color:var(--ink); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .panel h2 { margin:0 0 8px; font-size:1.05rem; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  input[type=text] { padding:8px; font-size:1rem; width:12em; border:1px solid #bbb; border-radius:6px; }
+  button { padding:9px 14px; border:0; border-radius:8px; background:var(--accent); font-weight:600; cursor:pointer; }
+  button.secondary { background:#e5e8e6; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .cards { display:flex; gap:6px; margin-top:8px; min-height:44px; }
+  .card { background:#fff; border:1px solid #888; border-radius:6px; padding:6px 8px; font-weight:700; font-size:1.2rem; }
+  .card.red { color:#c0152f; }
+  .hint { color:var(--muted); font-size:.85rem; }
+  .bar { height:18px; background:#dde3df; border-radius:9px; overflow:hidden; margin-top:6px; }
+  .bar > div { height:100%; background:#2e9d62; }
+  .result { margin-top:12px; }
+  .err { color:#b00020; font-weight:600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>♠ Poker Odds ♥</h1>
+
+  <div class="panel">
+    <h2>Flop (3 cards)</h2>
+    <div class="row">
+      <input type="file" id="flopFile" accept="image/*">
+      <input type="text" id="flopText" placeholder="e.g. Ah Kd 7c">
+    </div>
+    <div class="cards" id="flopCards"></div>
+    <div class="hint">Upload a photo, or type cards (rank + suit: c d h s). You can correct anything the photo reader gets wrong.</div>
+  </div>
+
+  <div id="hands"></div>
+  <div class="row" style="margin-bottom:14px">
+    <button class="secondary" id="addHand">+ Add hand</button>
+    <button id="calc">Calculate odds (flop)</button>
+    <button id="calcPre">Calculate pre-flop odds</button>
+  </div>
+  <div class="panel" id="out" hidden></div>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
