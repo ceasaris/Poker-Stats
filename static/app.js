@@ -152,9 +152,30 @@ function parseText(text) {
   });
 }
 
+// Phone photos are several MB and cards stay legible at ~1024px, so shrink
+// before upload. Falls back to the original file if the browser can't decode it.
+async function shrinkImage(file, maxSide = 1024) {
+  try {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    URL.revokeObjectURL(url);
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.85));
+    return blob && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
+}
+
 async function recognize(file, kind) {
   const fd = new FormData();
-  fd.append("image", file);
+  fd.append("image", await shrinkImage(file), "photo.jpg");
   fd.append("kind", kind);
   const res = await fetch("/api/recognize", { method: "POST", body: fd });
   const data = await res.json();
